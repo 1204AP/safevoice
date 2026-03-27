@@ -1,0 +1,29 @@
+{
+  "laws": [
+    {
+      "id": "498A",
+      "title": "IPC Section 498A",
+      "summary_en": "Protects married women from cruelty by husband or his relatives. Punishment: up to 3 years imprisonment. You can file an FIR at any police station.",
+      "summary_kn": "ಪತಿ ಅಥವಾ ಅವರ ಸಂಬಂಧಿಕರಿಂದ ಕ್ರೌರ್ಯದಿಂದ ವಿವಾಹಿತ ಮಹಿಳೆಯರನ್ನು ರಕ್ಷಿಸುತ್ತದೆ. ಶಿಕ್ಷೆ: 3 ವರ್ಷಗಳವರೆಗೆ ಜೈಲು."
+    },
+    {
+      "id": "PWDVA",
+      "title": "Protection of Women from Domestic Violence Act 2005",
+      "summary_en": "Covers physical, emotional, sexual and economic abuse. You can get a Protection Order, Residence Order, and Monetary Relief without filing criminal case.",
+      "summary_kn": "ದೈಹಿಕ, ಭಾವನಾತ್ಮಕ, ಲೈಂಗಿಕ ಮತ್ತು ಆರ್ಥಿಕ ದುರ್ವಿನಿಯೋಗವನ್ನು ಒಳಗೊಂಡಿದೆ. ಕ್ರಿಮಿನಲ್ ಕೇಸ್ ಇಲ್ಲದೆ ರಕ್ಷಣಾ ಆದೇಶ ಪಡೆಯಬಹುದು."
+    },
+    {
+      "id": "POCSO",
+      "title": "POCSO Act 2012",
+      "summary_en": "Protects children under 18 from sexual abuse. Any person can report — you do not need to be the victim. Report to police or childline 1098.",
+      "summary_kn": "18 ವರ್ಷದೊಳಗಿನ ಮಕ್ಕಳನ್ನು ಲೈಂಗಿಕ ದುರ್ವಿನಿಯೋಗದಿಂದ ರಕ್ಷಿಸುತ್ತದೆ. ಯಾರಾದರೂ ವರದಿ ಮಾಡಬಹುದು."
+    }
+  ],
+  "helplines": [
+    { "name": "Women Helpline", "number": "1091", "available": "24/7" },
+    { "name": "Police", "number": "100", "available": "24/7" },
+    { "name": "Childline", "number": "1098", "available": "24/7" },
+    { "name": "One Stop Centre", "number": "181", "available": "24/7" },
+    { "name": "Karnataka Legal Aid", "number": "1516", "available": "Mon-Sat 10am-5pm" }
+  ]
+}
