@@ -3,27 +3,248 @@
     {
       "id": "498A",
       "title": "IPC Section 498A",
-      "summary_en": "Protects married women from cruelty by husband or his relatives. Punishment: up to 3 years imprisonment. You can file an FIR at any police station.",
-      "summary_kn": "ಪತಿ ಅಥವಾ ಅವರ ಸಂಬಂಧಿಕರಿಂದ ಕ್ರೌರ್ಯದಿಂದ ವಿವಾಹಿತ ಮಹಿಳೆಯರನ್ನು ರಕ್ಷಿಸುತ್ತದೆ. ಶಿಕ್ಷೆ: 3 ವರ್ಷಗಳವರೆಗೆ ಜೈಲು."
+      "summary_en": "Protects married women from cruelty by husband or his relatives. Punishment up to 3 years. File FIR at ANY police station — they cannot refuse.",
+      "summary_kn": "ಪತಿ ಅಥವಾ ಸಂಬಂಧಿಕರಿಂದ ಕ್ರೌರ್ಯದಿಂದ ವಿವಾಹಿತ ಮಹಿಳೆಯರನ್ನು ರಕ್ಷಿಸುತ್ತದೆ. ಶಿಕ್ಷೆ 3 ವರ್ಷಗಳವರೆಗೆ.",
+      "summary_hi": "विवाहित महिलाओं को पति या उसके रिश्तेदारों की क्रूरता से बचाता है। किसी भी पुलिस स्टेशन में FIR दर्ज करें।",
+      "summary_te": "భర్త లేదా బంధువుల క్రూరత్వం నుండి వివాహిత మహిళలను రక్షిస్తుంది।",
+      "type": "criminal",
+      "punishment": "Up to 3 years + fine",
+      "key_point": "Police MUST register FIR — cannot refuse"
     },
     {
       "id": "PWDVA",
       "title": "Protection of Women from Domestic Violence Act 2005",
-      "summary_en": "Covers physical, emotional, sexual and economic abuse. You can get a Protection Order, Residence Order, and Monetary Relief without filing criminal case.",
-      "summary_kn": "ದೈಹಿಕ, ಭಾವನಾತ್ಮಕ, ಲೈಂಗಿಕ ಮತ್ತು ಆರ್ಥಿಕ ದುರ್ವಿನಿಯೋಗವನ್ನು ಒಳಗೊಂಡಿದೆ. ಕ್ರಿಮಿನಲ್ ಕೇಸ್ ಇಲ್ಲದೆ ರಕ್ಷಣಾ ಆದೇಶ ಪಡೆಯಬಹುದು."
+      "summary_en": "Covers physical, emotional, sexual and economic abuse. Get Protection Order, Residence Order, Maintenance — WITHOUT filing criminal case. Fastest civil remedy.",
+      "summary_kn": "ದೈಹಿಕ, ಭಾವನಾತ್ಮಕ, ಲೈಂಗಿಕ ಮತ್ತು ಆರ್ಥಿಕ ದುರ್ವಿನಿಯೋಗ ಒಳಗೊಂಡಿದೆ. ಕ್ರಿಮಿನಲ್ ಕೇಸ್ ಇಲ್ಲದೆ ರಕ್ಷಣಾ ಆದೇಶ ಪಡೆಯಬಹುದು.",
+      "summary_hi": "शारीरिक, भावनात्मक, यौन और आर्थिक शोषण को कवर करता है। बिना आपराधिक मामले के सुरक्षा आदेश मिल सकता है।",
+      "summary_te": "శారీరక, భావోద్వేగ, లైంగిక మరియు ఆర్థిక దుర్వినియోగాన్ని కవర్ చేస్తుంది.",
+      "type": "civil",
+      "punishment": "Protection Order same day possible",
+      "key_point": "You can STAY in home even if it is in husband's name"
     },
     {
       "id": "POCSO",
       "title": "POCSO Act 2012",
-      "summary_en": "Protects children under 18 from sexual abuse. Any person can report — you do not need to be the victim. Report to police or childline 1098.",
-      "summary_kn": "18 ವರ್ಷದೊಳಗಿನ ಮಕ್ಕಳನ್ನು ಲೈಂಗಿಕ ದುರ್ವಿನಿಯೋಗದಿಂದ ರಕ್ಷಿಸುತ್ತದೆ. ಯಾರಾದರೂ ವರದಿ ಮಾಡಬಹುದು."
+      "summary_en": "Protects children under 18 from sexual abuse. Anyone can report — you do not need to be the victim. Report to police or Childline 1098.",
+      "summary_kn": "18 ವರ್ಷದೊಳಗಿನ ಮಕ್ಕಳನ್ನು ಲೈಂಗಿಕ ದುರ್ವಿನಿಯೋಗದಿಂದ ರಕ್ಷಿಸುತ್ತದೆ.",
+      "summary_hi": "18 साल से कम बच्चों को यौन शोषण से बचाता है। कोई भी रिपोर्ट कर सकता है।",
+      "summary_te": "18 సంవత్సరాల లోపు పిల్లలను లైంగిక దుర్వినియోగం నుండి రక్షిస్తుంది.",
+      "type": "criminal",
+      "punishment": "Varies — minimum 3 years",
+      "key_point": "Child's identity fully protected by law"
+    },
+    {
+      "id": "304B",
+      "title": "IPC Section 304B — Dowry Death",
+      "summary_en": "If a woman dies within 7 years of marriage under suspicious circumstances, husband and in-laws are presumed guilty. Minimum 7 years imprisonment.",
+      "summary_kn": "ವಿವಾಹದ 7 ವರ್ಷಗಳಲ್ಲಿ ಸಂಶಯಾಸ್ಪದ ಸಾವು ಸಂಭವಿಸಿದರೆ ಪತಿ ಮತ್ತು ಮಾವನ ಮನೆಯವರು ತಪ್ಪಿತಸ್ಥರೆಂದು ಪರಿಗಣಿಸಲಾಗುತ್ತದೆ.",
+      "summary_hi": "विवाह के 7 साल के भीतर संदिग्ध मृत्यु होने पर पति और ससुराल वाले दोषी माने जाते हैं।",
+      "summary_te": "వివాహం తర్వాత 7 సంవత్సరాల లోపు అనుమానాస్పద మరణం జరిగితే భర్త మరియు అత్తారింటి వారు దోషులుగా పరిగణించబడతారు.",
+      "type": "criminal",
+      "punishment": "Minimum 7 years — up to life",
+      "key_point": "Accused must prove innocence"
+    },
+    {
+      "id": "354D",
+      "title": "IPC Section 354D — Stalking",
+      "summary_en": "Covers following, monitoring phone or internet activity, contacting repeatedly without consent. Up to 5 years imprisonment.",
+      "summary_kn": "ಹಿಂಬಾಲಿಸುವುದು, ಫೋನ್ ಅಥವಾ ಇಂಟರ್ನೆಟ್ ಚಟುವಟಿಕೆ ಮೇಲ್ವಿಚಾರಣೆ ಮಾಡುವುದು ಅಪರಾಧ.",
+      "summary_hi": "पीछा करना, फोन या इंटरनेट गतिविधि की निगरानी करना अपराध है।",
+      "summary_te": "వెంబడించడం, ఫోన్ లేదా ఇంటర్నెట్ కార్యకలాపాలను పర్యవేక్షించడం నేరం.",
+      "type": "criminal",
+      "punishment": "Up to 5 years",
+      "key_point": "Online monitoring and tracking is also covered"
+    },
+    {
+      "id": "125CrPC",
+      "title": "Section 125 CrPC — Maintenance",
+      "summary_en": "Husband must pay maintenance to wife and children if he has means. Available even during separation. Interim maintenance granted quickly.",
+      "summary_kn": "ಪತಿ ಹೆಂಡತಿ ಮತ್ತು ಮಕ್ಕಳಿಗೆ ಜೀವನಾಂಶ ಕೊಡಲು ಬಾಧ್ಯಸ್ಥ. ವಿಚ್ಛೇದನ ಇಲ್ಲದೆಯೂ ಲಭ್ಯ.",
+      "summary_hi": "पति को पत्नी और बच्चों का भरण-पोषण करना होगा। अलगाव के दौरान भी मिलता है।",
+      "summary_te": "భర్త భార్య మరియు పిల్లలకు జీవనభృతి చెల్లించాలి.",
+      "type": "civil",
+      "punishment": "Court orders payment — non-payment = imprisonment",
+      "key_point": "Interim maintenance within weeks of filing"
     }
   ],
   "helplines": [
-    { "name": "Women Helpline", "number": "1091", "available": "24/7" },
-    { "name": "Police", "number": "100", "available": "24/7" },
-    { "name": "Childline", "number": "1098", "available": "24/7" },
-    { "name": "One Stop Centre", "number": "181", "available": "24/7" },
-    { "name": "Karnataka Legal Aid", "number": "1516", "available": "Mon-Sat 10am-5pm" }
+    {
+      "name": "National Emergency",
+      "number": "112",
+      "available": "24/7",
+      "description": "Police, Fire, Ambulance — fastest response",
+      "icon": "🚨",
+      "priority": 1
+    },
+    {
+      "name": "Police",
+      "number": "100",
+      "available": "24/7",
+      "description": "Direct police line",
+      "icon": "🚔",
+      "priority": 2
+    },
+    {
+      "name": "Women Helpline",
+      "number": "1091",
+      "available": "24/7",
+      "description": "Women in distress — immediate support",
+      "icon": "👩",
+      "priority": 3
+    },
+    {
+      "name": "One Stop Centre",
+      "number": "181",
+      "available": "24/7",
+      "description": "Free shelter + legal + medical + police — all under one roof",
+      "icon": "🏠",
+      "priority": 4
+    },
+    {
+      "name": "Childline",
+      "number": "1098",
+      "available": "24/7",
+      "description": "For children in danger — anyone can call",
+      "icon": "👶",
+      "priority": 5
+    },
+    {
+      "name": "Ambulance",
+      "number": "108",
+      "available": "24/7",
+      "description": "Medical emergency",
+      "icon": "🚑",
+      "priority": 6
+    },
+    {
+      "name": "NALSA Free Legal Aid",
+      "number": "1516",
+      "available": "Mon-Sat",
+      "description": "Free lawyer — file case, attend court — completely free",
+      "icon": "⚖️",
+      "priority": 7
+    },
+    {
+      "name": "iCall Mental Health (TISS)",
+      "number": "9152987821",
+      "available": "Mon-Sat 8am-10pm",
+      "description": "Free professional counseling",
+      "icon": "🧠",
+      "priority": 8
+    },
+    {
+      "name": "Vandrevala Foundation",
+      "number": "1860-2662-345",
+      "available": "24/7",
+      "description": "24/7 mental health crisis support",
+      "icon": "💙",
+      "priority": 9
+    },
+    {
+      "name": "Karnataka Vanitha Sahaya",
+      "number": "1800-425-8555",
+      "available": "24/7",
+      "description": "Karnataka specific — free, toll-free women's support",
+      "icon": "🌸",
+      "priority": 10
+    },
+    {
+      "name": "NCW Helpline",
+      "number": "1800-111-100",
+      "available": "Mon-Sat",
+      "description": "National Commission for Women — escalate police inaction",
+      "icon": "🏛️",
+      "priority": 11
+    }
+  ],
+  "shelters": [
+    {
+      "name": "One Stop Centre (Sakhi Centre)",
+      "description": "Government-run. Free. Every district. Shelter + medical + legal + police + counseling under one roof. No documents needed for emergency entry.",
+      "how_to_reach": "Call 181 or ask any police station",
+      "duration": "Up to 5 days, extendable",
+      "accepts_children": true
+    },
+    {
+      "name": "Short Stay Home (Swadhar Greh)",
+      "description": "Free government shelter. Up to 1 year stay. Children can stay with mother.",
+      "how_to_reach": "Contact District Women & Child Development Officer or call 181",
+      "duration": "Up to 1 year",
+      "accepts_children": true
+    },
+    {
+      "name": "Nari Adalat",
+      "description": "Community-based women's courts for mediation and quick resolution in villages",
+      "how_to_reach": "Contact gram panchayat or district WCD officer",
+      "duration": "N/A — mediation service",
+      "accepts_children": false
+    }
+  ],
+  "landmark_cases": [
+    {
+      "case": "Rupali Devi v State of UP (2019)",
+      "court": "Supreme Court",
+      "principle": "Woman can file case where she has taken shelter after leaving — not restricted to where abuse happened"
+    },
+    {
+      "case": "Hiral P. Harsora v Kusum Harsora (2016)",
+      "court": "Supreme Court",
+      "principle": "Female relatives (mother-in-law, sister-in-law) can be respondents under PWDVA — not just husband"
+    },
+    {
+      "case": "V.D. Bhanot v Savita Bhanot (2012)",
+      "court": "Supreme Court",
+      "principle": "PWDVA applies to relationships that existed before 2005 — past abuse can be claimed"
+    },
+    {
+      "case": "Indra Sarma v V.K.V. Sarma (2013)",
+      "court": "Supreme Court",
+      "principle": "Live-in partners have rights similar to wife under PWDVA"
+    },
+    {
+      "case": "Samar Ghosh v Jaya Ghosh (2007)",
+      "court": "Supreme Court",
+      "principle": "Mental cruelty alone is sufficient grounds for divorce — no physical violence required"
+    },
+    {
+      "case": "Lalita Toppo v State of Jharkhand (2018)",
+      "court": "Supreme Court",
+      "principle": "Women in live-in relationships can claim maintenance under PWDVA beyond Section 125 CrPC"
+    },
+    {
+      "case": "Shayara Bano v Union of India (2017)",
+      "court": "Supreme Court",
+      "principle": "Instant Triple Talaq unconstitutional — Muslim women protected from arbitrary divorce"
+    }
+  ],
+  "myths": [
+    {
+      "fear": "I can only file FIR at the local police station",
+      "truth": "You can file at ANY police station in India. They must accept it by law."
+    },
+    {
+      "fear": "I will lose my children if I leave",
+      "truth": "Mother has equal legal right. Courts favour mother for young children. Leaving does not forfeit custody."
+    },
+    {
+      "fear": "I have no money and nowhere to go",
+      "truth": "One Stop Centres are completely free — shelter, food, legal, medical. Call 181. Walk in with nothing."
+    },
+    {
+      "fear": "Police won't help — it's a family matter",
+      "truth": "Police are legally obligated to register FIR. If refused, go to Magistrate or file NCW complaint."
+    },
+    {
+      "fear": "Only physical violence counts as abuse",
+      "truth": "PWDVA covers emotional, verbal, economic, sexual abuse equally. All are valid in court."
+    },
+    {
+      "fear": "It's too late — we've been married 20 years",
+      "truth": "No time limit on filing PWDVA or 498A. Many women have filed successfully after 20+ years."
+    },
+    {
+      "fear": "He will find me wherever I go",
+      "truth": "One Stop Centres and short stay homes do not disclose location to anyone including police without her consent."
+    }
   ]
 }

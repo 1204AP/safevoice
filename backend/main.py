@@ -1,301 +1,15 @@
-# # backend/main.py
-# from fastapi import FastAPI
-# from fastapi.middleware.cors import CORSMiddleware
-# from pydantic import BaseModel
-# from typing import Optional, List, Dict, Any
-# import anthropic
-# import os
-
-# app = FastAPI()
-
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=["*"],
-#     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )
-
-# client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
-
-# LANG_NAMES = {"en": "English", "kn": "Kannada", "hi": "Hindi", "te": "Telugu"}
-
-# # ── MODELS ──────────────────────────────────────────────────────────────────
-
-# class ChatRequest(BaseModel):
-#     message: str
-#     language: str
-#     history: List[Dict[str, str]] = []
-
-# class ExitPlanChatRequest(BaseModel):
-#     language: str
-#     context: Dict[str, Any] = {}
-#     lastAnswer: str
-#     questionId: str
-#     history: List[Dict[str, str]] = []
-
-# class AllyChatRequest(BaseModel):
-#     language: str
-#     context: Dict[str, Any] = {}
-#     lastAnswer: str
-#     questionId: str
-#     history: List[Dict[str, str]] = []
-
-# # ── CHAT (Legal Help) ────────────────────────────────────────────────────────
-
-# CHAT_SYSTEM = """You are SafeVoice, a compassionate and knowledgeable legal guidance assistant 
-# for domestic abuse survivors in India. You respond in {lang}.
-
-# Your role:
-# - Provide empathetic, human-like responses (not robotic or formal)
-# - Give clear, actionable legal information relevant to India (Protection of Women from Domestic Violence Act, IPC sections, etc.)
-# - Structure responses with:
-#   • A short empathetic opening (1-2 sentences)
-#   • A LEGAL SUMMARY section (brief, plain language)
-#   • IMMEDIATE SAFETY STEPS numbered list (practical, specific)
-#   • What to do NEXT (one clear action)
-# - Always mention relevant helplines: 181 (Women Helpline), 100 (Police), 1091 (Women in Distress)
-# - Never be dismissive. Never blame the victim.
-# - Keep responses concise but complete.
-# - If urgent danger, prioritize safety over legal advice."""
-
-# @app.post("/chat")
-# def chat(req: ChatRequest):
-#     lang = LANG_NAMES.get(req.language, "English")
-#     system = CHAT_SYSTEM.format(lang=lang)
-    
-#     messages = []
-#     for h in req.history[:-1]:  # exclude the last user message, we add it separately
-#         messages.append({"role": h["role"], "content": h["content"]})
-#     messages.append({"role": "user", "content": req.message})
-    
-#     response = client.messages.create(
-#         model="claude-opus-4-5",
-#         max_tokens=800,
-#         system=system,
-#         messages=messages
-#     )
-#     return {"reply": response.content[0].text}
-
-# # ── EXIT PLAN CHAT ───────────────────────────────────────────────────────────
-
-# EXIT_PLAN_SYSTEM = """You are SafeVoice's Safe Exit Planner — a warm, practical friend who helps 
-# domestic abuse survivors plan their safety. Respond in {lang}.
-
-# Your job: Have a natural, flowing conversation. Based on what the user shares:
-# 1. Give POINTWISE, numbered practical advice (not walls of text)
-# 2. Use bold headers like **Step 1: Immediate Safety** 
-# 3. Then ask ONE focused follow-up question with 3-5 specific clickable options
-# 4. Be like a knowledgeable friend — warm, specific, non-judgmental
-
-# ALWAYS respond in this JSON format:
-# {{
-#   "reply": "Your empathetic opening + numbered steps/advice (use \\n for newlines, number each point)",
-#   "followUpQuestion": "One focused follow-up question to get more details",
-#   "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
-#   "nextQuestionId": "a_short_snake_case_id"
-# }}
-
-# If this is a final summary (no more questions needed), set followUpQuestion to null and options to null.
-
-# Context gathered so far: {context}
-# Current question being answered: {questionId}
-# User's answer: {lastAnswer}
-
-# Follow-up topics to explore (pick the most relevant one NOT already covered):
-# - children situation
-# - financial resources  
-# - trusted people who can help
-# - documents they have (ID, bank cards)
-# - immediate safety concerns tonight
-# - where they can go (shelter, family, NGO)
-# - phone/device safety
-# - legal orders needed"""
-
-# @app.post("/exit-plan-chat")
-# def exit_plan_chat(req: ExitPlanChatRequest):
-#     lang = LANG_NAMES.get(req.language, "English")
-#     system = EXIT_PLAN_SYSTEM.format(
-#         lang=lang,
-#         context=str(req.context),
-#         questionId=req.questionId,
-#         lastAnswer=req.lastAnswer
-#     )
-    
-#     messages = [{"role": "user", "content": f"Here is the conversation so far and my latest answer: {req.lastAnswer}"}]
-#     if req.history:
-#         messages = []
-#         for h in req.history:
-#             messages.append({"role": h["role"], "content": h["content"]})
-    
-#     response = client.messages.create(
-#         model="claude-opus-4-5",
-#         max_tokens=700,
-#         system=system,
-#         messages=messages if messages else [{"role": "user", "content": req.lastAnswer}]
-#     )
-    
-#     import json, re
-#     raw = response.content[0].text
-#     # Try to parse JSON
-#     try:
-#         # Extract JSON if wrapped in markdown
-#         match = re.search(r'\{[\s\S]*\}', raw)
-#         if match:
-#             data = json.loads(match.group())
-#             return data
-#     except Exception:
-#         pass
-#     # Fallback
-#     return {
-#         "reply": raw,
-#         "followUpQuestion": None,
-#         "options": None,
-#         "nextQuestionId": None
-#     }
-
-# # ── ALLY CHAT ────────────────────────────────────────────────────────────────
-
-# ALLY_SYSTEM = """You are SafeVoice's Ally Mode assistant — helping friends and family support 
-# a domestic abuse survivor. Respond in {lang}.
-
-# Your job: Like a knowledgeable friend, give:
-# 1. SPECIFIC, numbered practical steps (not generic advice)
-# 2. Exact conversation scripts when relevant (what to actually say)
-# 3. Warning signs to watch for
-# 4. What NOT to do (common mistakes allies make)
-# 5. Local India-specific resources (1091, iCall, Snehi, local shelters)
-
-# ALWAYS respond in this JSON format:
-# {{
-#   "reply": "Empathetic opening + specific numbered steps/scripts (use \\n for newlines, number each point, use **headers** for sections)",
-#   "followUpQuestion": "One focused question to understand the situation better and give more specific help",
-#   "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
-#   "nextQuestionId": "a_short_snake_case_id"
-# }}
-
-# If enough info gathered for a complete action plan, set followUpQuestion to null and options to null.
-
-# Context so far: {context}
-# Question answered: {questionId}  
-# Their answer: {lastAnswer}
-
-# Follow-up topics to explore (pick most relevant NOT already covered):
-# - relationship to the person (friend/colleague/neighbour/family)
-# - how immediate is the danger
-# - has the person acknowledged the abuse
-# - does the person want help
-# - safety of children involved
-# - what the ally can practically offer (housing, money, time)
-# - has anyone else noticed"""
-
-# @app.post("/ally-chat")
-# def ally_chat(req: AllyChatRequest):
-#     lang = LANG_NAMES.get(req.language, "English")
-#     system = ALLY_SYSTEM.format(
-#         lang=lang,
-#         context=str(req.context),
-#         questionId=req.questionId,
-#         lastAnswer=req.lastAnswer
-#     )
-    
-#     messages = []
-#     if req.history:
-#         for h in req.history:
-#             messages.append({"role": h["role"], "content": h["content"]})
-#     else:
-#         messages = [{"role": "user", "content": req.lastAnswer}]
-    
-#     response = client.messages.create(
-#         model="claude-opus-4-5",
-#         max_tokens=700,
-#         system=system,
-#         messages=messages
-#     )
-    
-#     import json, re
-#     raw = response.content[0].text
-#     try:
-#         match = re.search(r'\{[\s\S]*\}', raw)
-#         if match:
-#             data = json.loads(match.group())
-#             return data
-#     except Exception:
-#         pass
-#     return {
-#         "reply": raw,
-#         "followUpQuestion": None,
-#         "options": None,
-#         "nextQuestionId": None
-#     }
-
-# # ── LEGACY endpoints (keep for backward compat) ──────────────────────────────
-
-# class AllyRequest(BaseModel):
-#     observation: str
-#     language: str
-
-# @app.post("/ally")
-# def ally_legacy(req: AllyRequest):
-#     lang = LANG_NAMES.get(req.language, "English")
-#     response = client.messages.create(
-#         model="claude-opus-4-5",
-#         max_tokens=600,
-#         system=f"You are a domestic abuse support assistant. Respond in {lang} with specific numbered steps.",
-#         messages=[{"role": "user", "content": f"I observed: {req.observation}. What should I do to help?"}]
-#     )
-#     return {"guidance": response.content[0].text}
-
-# class ExitPlanRequest(BaseModel):
-#     has_children: bool
-#     has_income: bool
-#     has_trusted_person: bool
-#     language: str
-
-# @app.post("/exit-plan")
-# def exit_plan_legacy(req: ExitPlanRequest):
-#     lang = LANG_NAMES.get(req.language, "English")
-#     context = f"Has children: {req.has_children}, Has income: {req.has_income}, Has trusted person: {req.has_trusted_person}"
-#     response = client.messages.create(
-#         model="claude-opus-4-5",
-#         max_tokens=700,
-#         system=f"You are a domestic abuse safety planner. Respond in {lang} with a numbered exit plan.",
-#         messages=[{"role": "user", "content": f"Create a safety exit plan. Context: {context}"}]
-#     )
-#     return {"plan": response.content[0].text}
-
-# class ComplaintRequest(BaseModel):
-#     entries: List[Dict]
-#     language: str
-
-# @app.post("/format-complaint")
-# def format_complaint(req: ComplaintRequest):
-#     lang = LANG_NAMES.get(req.language, "English")
-#     entries_text = "\n\n".join([f"[{e.get('date', '')}] {e.get('text', '')}" for e in req.entries])
-#     response = client.messages.create(
-#         model="claude-opus-4-5",
-#         max_tokens=800,
-#         system=f"You are a legal document assistant. Format the following diary entries into a clear, structured complaint document in {lang}.",
-#         messages=[{"role": "user", "content": entries_text}]
-#     )
-#     return {"complaint": response.content[0].text}
-
-
-
-
-
-
-
-
 # backend/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
-import anthropic
+from openai import OpenAI
 import os
 import json
 import re
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = FastAPI()
 
@@ -307,199 +21,440 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+# ── Cerebras client (OpenAI-compatible) ──────────────────────────────────────
+client = OpenAI(
+    api_key=os.getenv("CEREBRAS_API_KEY"),
+    base_url="https://api.cerebras.ai/v1"
+)
 
-LANG_NAMES = {"en": "English", "kn": "Kannada", "hi": "Hindi", "te": "Telugu"}
+MODEL = "llama3.1-8b"
+
+# ── Load knowledge base JSON ─────────────────────────────────────────────────
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+KB_PATH = os.path.join(BASE_DIR, "..", "knowledge_base", "data.json")
+
+with open(KB_PATH, "r", encoding="utf-8") as f:
+    KB = json.load(f)
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# KNOWLEDGE BASE — Comprehensive Indian Laws & Support
+# KNOWLEDGE BASE STRING (used by AI)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 KNOWLEDGE_BASE = """
-=== COMPREHENSIVE INDIAN LAW KNOWLEDGE BASE ===
+╔══════════════════════════════════════════════════════════════════════════════╗
+║           SAFEVOICE COMPREHENSIVE KNOWLEDGE BASE — INDIA                   ║
+║           Domestic Violence · Legal Rights · Survival · Safety             ║
+╚══════════════════════════════════════════════════════════════════════════════╝
 
---- CRIMINAL LAWS ---
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 1 — WHAT COUNTS AS ABUSE (Indian Legal Definitions)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-IPC Section 498A (Cruelty by Husband/Relatives):
-- Protects married women from cruelty by husband or his family
-- "Cruelty" includes physical harm, mental torture, dowry demands, threats
-- Punishment: Up to 3 years + fine. Non-bailable, cognizable offense
-- File FIR at ANY police station in India (not just where you live)
-- Police MUST register FIR under Section 154 CrPC — they CANNOT refuse
-- Cognizable = police can arrest without a warrant
-- No time limit — you can file even years later
-- If police refuse: Complain to SP/SSP/Commissioner or Magistrate court directly
+Under PWDVA 2005, abuse is FOUR types — all equally valid in court:
 
-IPC Section 354 (Assault to outrage modesty): 1-5 years. Any unwanted physical contact with sexual intent.
-IPC Section 354A (Sexual Harassment): Up to 3 years. Unwelcome contact, demands, pornography.
-IPC Section 354D (Stalking): Up to 3-5 years. Following, monitoring phone/location without consent.
-IPC Section 376 (Rape): Marital rape not yet criminal for adults, BUT forced sex within marriage = cruelty under PWDVA and Section 498A.
-IPC Section 406 (Criminal Breach of Trust): For recovering Streedhan — all gifts given to wife belong to HER legally, in-laws cannot keep it.
-IPC Section 506 (Criminal Intimidation): Threatening death/harm. Up to 2-7 years.
-IPC Section 509 (Insulting modesty): Verbal abuse, obscene messages. Up to 3 years.
-Dowry Prohibition Act: Demanding dowry = up to 5 years + fine. Dowry death (Section 304B IPC) = 7 years to life.
+PHYSICAL ABUSE:
+- Hitting, slapping, punching, kicking, biting, pushing, choking
+- Throwing objects at her
+- Denying food, water, sleep, medical treatment
+- Forcing alcohol/drugs
+- Burning (common in dowry cases)
+- Any physical harm or threat of physical harm
 
---- PWDVA 2005 — Most Powerful Civil Law ---
+SEXUAL ABUSE:
+- Forced sexual intercourse (marital rape — criminal under PWDVA even if not yet under IPC for adults)
+- Forcing to watch pornography
+- Sexual insults, calling her names related to her body
+- Forcing pregnancy or abortion
+- Denying right to use contraception
 
-Protection of Women from Domestic Violence Act 2005 covers ALL types of abuse:
-Physical, Sexual, Verbal/Emotional, Economic — all are abuse under this law
+VERBAL AND EMOTIONAL ABUSE (legally recognized):
+- Constant humiliation, insults, name-calling
+- Threatening to take children away
+- Threatening to remarry or bring another woman home
+- Threatening suicide to manipulate her
+- Isolating her from family and friends
+- Monitoring her phone, movements, clothing
+- Making her feel she is "mad" or unstable (gaslighting)
+- Controlling who she meets, talks to, goes out with
+- Threatening to file false cases against her family
+- Public humiliation
 
-Types of orders available WITHOUT filing criminal case:
-1. Protection Order: Prohibits abuser from violence, entering workplace/school/home
-2. Residence Order: You can STAY in the shared home even if house is in husband's name, OR get alternative accommodation
-3. Monetary Relief: Maintenance, medical expenses, property damage compensation
-4. Custody Order: Temporary custody of children
-5. Compensation Order: For mental/physical harm suffered
+ECONOMIC ABUSE (legally recognized — very common in India):
+- Controlling all household money, giving her no access
+- Forcing her to sign property/financial documents
+- Taking her salary or income
+- Stopping her from working
+- Running up debts in her name
+- Not paying for children's school/medical needs
+- Refusing to pay household expenses
+- Taking her streedhan/jewelry
+- Not disclosing family income/assets
 
-How to get Protection Order (FREE and Fast):
-- File application (Domestic Incident Report) directly before Magistrate
-- OR through Protection Officer (free, government-appointed in every district)
-- OR through NGO/service provider
-- Court can grant order SAME DAY if there is urgent danger
+DOWRY-RELATED ABUSE:
+- Demands for cash, gold, property, vehicles from her family
+- Torture connected to dowry demands
+- If a woman dies within 7 years of marriage suspiciously = presumed dowry death (IPC 304B)
+- Even verbal dowry demands = criminal offense
 
-Maintenance under Section 125 CrPC:
-- If husband refuses to maintain wife/children, court orders maintenance
-- No income limit. Available to divorced wives until remarriage
-- Interim maintenance can be granted quickly while case is pending
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 2 — COMPLETE INDIAN LAWS (Plain Language)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Hindu Marriage Act — Divorce Grounds: Cruelty, Desertion (2 years), Adultery, Mental disorder
-Streedhan: ALL gifts to wife before/during/after marriage legally BELONG TO HER
+PWDVA 2005 — Protection of Women from Domestic Violence Act:
+Most powerful law for Indian women. CIVIL law — faster, cheaper, no criminal record required.
+- Covers: physical, sexual, verbal, emotional, economic abuse
+- Protected: wife, live-in partner, sister, mother, daughter — any woman in domestic relationship
+- Respondents: husband, in-laws, brother-in-law, any family member
+- You do NOT need to leave home to use this law
+- You do NOT need to file a criminal case
+- Orders: Protection Order, Residence Order, Maintenance, Custody, Compensation
+- HOW TO FILE: Go to Magistrate court directly OR contact Protection Officer (free, every district)
+- Court can grant order SAME DAY if danger is immediate
+- Violating a Protection Order = arrest without warrant
 
---- POCSO Act 2012 (Child Protection) ---
-- Protects all children under 18 from sexual abuse
-- Mandatory reporting: doctors/teachers who suspect abuse MUST report
-- Report to: Police OR Childline 1098 (24/7, free)
-- Child's identity CANNOT be disclosed
+IPC SECTION 498A — Cruelty by Husband/Relatives:
+- CRIMINAL law. Husband AND in-laws can be arrested.
+- Covers: physical cruelty AND mental cruelty AND dowry harassment
+- Punishment: Up to 3 years imprisonment + fine. Non-bailable. Cognizable.
+- File at ANY police station — they cannot legally refuse
+- If police refuse: go to Magistrate directly (Section 156(3) CrPC)
 
---- WHERE TO GO (FREE GOVERNMENT RESOURCES) ---
+IPC SECTION 304B — Dowry Death:
+- Woman dies within 7 years of marriage suspiciously = husband/in-laws presumed guilty
+- Minimum 7 years, can be life imprisonment
 
-One Stop Centres (Sakhi Centres) — BEST OPTION:
-- Government-run, FREE, every district has one
-- Provides: shelter + medical aid + police help + legal aid + counseling — ALL UNDER ONE ROOF
-- Available 24/7 for emergencies
-- How to reach: Call 181 or ask police to take you
+DOWRY PROHIBITION ACT 1961:
+- Giving AND taking dowry = criminal offense. Demanding dowry = up to 5 years + fine.
 
-Short Stay Homes (Ministry of Women & Child Development):
-- Free stay up to 1 year for abuse survivors
-- Available in every state
-- Contact: District Women & Child Development Officer
+IPC SECTION 354 — Outraging Modesty: 1-5 years
+IPC SECTION 354A — Sexual Harassment: 1-3 years
+IPC SECTION 354D — Stalking: following, monitoring online/offline, 1-5 years
+IPC SECTION 376 — Rape: marital rape IS abuse under PWDVA
+IPC SECTION 406 — Criminal Breach of Trust: for recovering streedhan
+IPC SECTION 506 — Criminal Intimidation: threatening death, 2-7 years
+IPC SECTION 509 — Insulting modesty: verbal sexual abuse, 1-3 years
 
-Swadhar Greh: Free shelter for women in difficult circumstances
+SECTION 125 CrPC — Maintenance:
+- Husband must maintain wife. No income limit. Interim maintenance granted quickly by court.
 
-Free Legal Aid — District Legal Services Authority (DLSA):
-- Every district has DLSA — they provide free lawyers
-- Call 1516 (NALSA National Helpline) for nearest office
-- Women can apply regardless of income
-- They can file your case, attend court, everything FREE
+HINDU MARRIAGE ACT 1955 — Divorce Grounds:
+Cruelty (mental cruelty IS sufficient), Adultery, Desertion (2+ years), Mental disorder.
 
-Protection Officers (under PWDVA):
-- Government-appointed in every district
-- Help file PWDVA applications, accompany to police/court
-- Contact through District Women & Child Development Officer or call 181
+POCSO ACT 2012: Protects children under 18. Mandatory reporting. Report to Police or Childline 1098.
 
---- SAFE PLACES TO GO IN INDIA ---
+HINDU SUCCESSION ACT (amended 2005): Daughters have EQUAL share in ancestral property from birth.
 
-IMMEDIATE SAFE PLACES:
-1. One Stop Centre: Call 181, completely free, shelter+legal+medical
-2. Short Stay Home: Free government shelter up to 1 year
-3. Women Police Station: Can file complaint AND get immediate safety
-4. Government Hospital: Must treat you free in emergency (get Medico-Legal Case/MLC filed)
-5. Trusted family member's home (parents, sister, aunt)
-6. Trusted friend's home (not mutual friend with abuser)
-7. Temple/mosque/church with active women's group
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 3 — LEGAL RIGHTS IN SIMPLE LANGUAGE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-FIND NEARBY SAFE PLACES:
-Search on Google Maps: "One Stop Centre near me", "Women police station near me",
-"Short stay home for women near me", "Swadhar Greh near me", "DLSA near me"
+RIGHT TO STAY IN HOME: Even if house is in husband's/in-laws' name — she can stay under PWDVA Residence Order. In-laws CANNOT throw her out.
 
-NGOs INDIA (verified):
-- iCall (TISS Mumbai): 9152987821 — Free counseling Mon-Sat 8am-10pm
-- Vandrevala Foundation: 1860-2662-345 — 24/7 mental health
-- Snehi: 044-24640050
-- Majlis Legal Centre (Mumbai): women's legal help
-- Aasra: 9820466627 — 24/7 crisis support
+RIGHT TO STREEDHAN: All gifts given to her legally belong to HER. In-laws keeping it = IPC 406 criminal offense.
 
-NGOs KARNATAKA / BANGALORE:
-- Vimochana: 080-25496487 (feminist org, women's rights, legal support)
-- Samara: 080-26607659 (counseling, legal support)
-- Vanitha Sahaya Kendra (Karnataka): 1800-425-8555 (FREE, toll-free)
-- NIMHANS (Bangalore): 080-46110007 (mental health)
-- Swathi Mahila Sangha: Women's rights organization
+RIGHT TO CHILDREN: Mother has equal custody rights. Courts prefer mother for children under 5.
 
---- PRACTICAL SAFETY PLANNING IN INDIA ---
+RIGHT TO FILE CASE ANYWHERE: File FIR or PWDVA case where she currently lives, where she stayed with husband, where abuse happened, or where she is sheltering.
 
-DOCUMENTS TO COLLECT (highest priority first):
-Critical: Aadhaar card, Passport, PAN card, Voter ID, Ration card, Marriage certificate
-For children: Birth certificates, school records
-Financial: Bank passbook, ATM cards, FD receipts, any property documents in your name
-Evidence: Photos of injuries, screenshots of threats, medical reports
-Jewelry (Streedhan): Legally yours, take it
+RIGHT TO FREE LEGAL AID: Free lawyer from DLSA regardless of income. Call 1516.
 
-GO BAG (pack secretly):
-- Cash ₹3000-5000 minimum (enough for auto/bus + few nights)
-- Aadhaar + important documents (or scanned copies on email to yourself)
-- Change of clothes for you + children
-- Medicines (yours + children's)
-- Phone charger
-- Any jewelry (your streedhan)
+RIGHT TO PROTECTION ORDER SAME DAY: Emergency ex-parte order possible without hearing other side.
 
-DEVICE SAFETY (CRITICAL):
-- Delete browser history after this session
-- Use incognito/private browsing for all searches
-- WhatsApp can be monitored — use Signal for sensitive messages
-- Check for tracking apps: Settings > Apps > look for unfamiliar apps
-- Disable location sharing in Google Maps, WhatsApp
-- Change passwords on a device he cannot access
-- Enable 2-factor authentication
+RIGHT TO MLC: Go to government hospital — request MLC (Medico-Legal Certificate). Doctor must prepare it. Powerful court evidence.
 
-FINANCIAL INDEPENDENCE (INDIA):
-- Jan Dhan Account: Open at any bank with just Aadhaar — no minimum balance required
-- Open account when he is NOT with you
-- SHG (Self Help Group): Micro-loans, many villages/cities have these, district bank can refer
-- PM Ujjwala Yojana: Free LPG connection if below poverty line
-- MGNREGA (rural): 100 days guaranteed employment
-- Pradhan Mantri Kaushal Vikas Yojana: Free skill training
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 4 — RISK ESCALATION SIGNS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-CODE WORD SAFETY:
-- Tell a trusted neighbor: "Can I borrow some sugar?" = "Call police immediately"
-- Tell a trusted family member: "I need help with Priya's school" = "I need to be picked up now"
+HIGH DANGER — Leave or get help immediately:
+- He threatened to kill her or children
+- He has weapons
+- He tried to strangle/choke her (strongest predictor of escalation to murder)
+- Violence getting more frequent or severe
+- He says "if I can't have you no one can"
+- He lost job recently / abuses alcohol or drugs
+- She tried to leave before and he used violence to stop her
 
---- HELPLINES (ALL INDIA) ---
-- 112: National Emergency (Police/Fire/Ambulance) — FASTEST
-- 100: Police
-- 1091: Women in Distress (24/7)
-- 181: Women Helpline + One Stop Centre referral (24/7)
-- 1098: Childline for children (24/7)
-- 1516: NALSA Free Legal Aid
-- 9152987821: iCall Mental Health (TISS)
-- 1860-2662-345: Vandrevala Foundation (24/7 mental health)
-- Karnataka specific: 1800-425-8555 Vanitha Sahaya Kendra (FREE)
+MEDIUM DANGER — Take precautions now:
+- Violence ongoing but controlled
+- Controls all money
+- Reads all her messages
+- Humiliated her in public
 
---- IMPORTANT MYTHS VS FACTS ---
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 5 — IMMEDIATE SAFETY STEPS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-MYTH: I can only file FIR at local police station
-FACT: File at ANY police station in India. They must accept it.
+IF IN IMMEDIATE DANGER NOW:
+1. Call 112 (national emergency) — fastest response
+2. Call 100 (police directly)
+3. If phone monitored — go to nearest neighbour, shop, temple, public place
+4. Shout for help — neighbours in India often respond
+5. Lock yourself and children in room with your phone
+6. Go to nearest government hospital emergency — they must treat and file MLC
+7. Call 181 — One Stop Centre sends support
 
-MYTH: I need to leave the house if it's in husband's name
-FACT: Under PWDVA Residence Order, you have the legal right to stay OR get alternative accommodation
+IF NOT IN IMMEDIATE DANGER — PREPARE:
+- Identify safest room in house (phone access, exit, no weapons)
+- Tell at least one trusted neighbour
+- Create code word: "Can I borrow some sugar?" = call police now
+- Memorize 2-3 phone numbers — store as innocent names
+- Plan when to leave: when he is at work / sleeping
+- Leave with children — never leave children behind
+- Do NOT announce you are leaving — just leave
 
-MYTH: Police won't help in family matters
-FACT: Domestic violence is a criminal offense. Police are legally obligated to act.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 6 — SAFE EXIT AND SURVIVAL STRATEGIES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-MYTH: Only physical violence counts as abuse
-FACT: PWDVA covers emotional, verbal, economic, sexual abuse — not just physical
+THE GO BAG — Pack secretly, store at trusted person's home:
+Priority 1: Aadhaar, Passport, Voter ID, PAN, Marriage certificate, Birth certificates
+Priority 2: Cash Rs 3000-5000 minimum, ATM card, bank passbook
+Priority 3: Children's school records, immunization cards
+Priority 4: Photos of injuries, screenshots of threats, medical reports
+Priority 5: Phone+charger, medicines, change of clothes, streedhan/jewelry
 
-MYTH: I'll lose custody of children if I leave
-FACT: Mother has equal right. Court decides based on child's best interest — not who left.
+FINANCIAL SURVIVAL:
+- Jan Dhan Account: Any bank with Aadhaar only. Zero balance. Open when alone.
+- Save Rs 100-200 secretly per day
+- SHG (Self Help Group): micro-loans in most areas. Contact district bank or ASHA worker.
+- MGNREGA (rural): 100 days employment. Register at gram panchayat.
+- PM Kaushal Vikas Yojana: free skill training at government ITI centres
 
-MYTH: My in-laws can take my children
-FACT: Only a Family Court can decide custody. In-laws have no automatic legal right.
+WHERE TO GO:
+1. One Stop Centre (call 181) — FREE, 24/7, shelter+medical+legal+police under one roof. NO documents needed.
+2. Short Stay Home (Swadhar Greh) — free government shelter up to 1 year. Children welcome.
+3. NGO shelters
+4. Trusted family NOT in abuser's social circle
+5. Trusted friend outside abuser's network
 
-MYTH: I need to return dowry/jewelry if I leave
-FACT: Streedhan legally belongs to the wife. It CANNOT be taken back.
+SURVIVAL PATTERNS SURVIVORS USE:
+- Use regular errands (doctor/temple/school) as cover when leaving
+- Leave in stages: move documents to trusted person over several days
+- Use neighbour's phone if yours is monitored
+- Open new email on library computer for sensitive communications
+- Use women's compartment in trains/metro when leaving
+- Take busy public routes — avoid isolated roads
 
-MYTH: I can't get maintenance if I have a job
-FACT: Under PWDVA, maintenance is based on lifestyle maintained during marriage, not just income gap.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 7 — EVIDENCE COLLECTION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+WHAT COUNTS IN COURT:
+- Photos of injuries (with timestamp)
+- MLC from government hospital
+- Screenshots of threatening WhatsApp/SMS
+- Audio recordings of threats (legal if she is party to conversation)
+- Video recordings of violence or threats
+- Handwritten incident diary (date, time, what happened, witnesses) — accepted in Indian courts
+- Bank statements showing financial control
+- Witness statements from neighbours, family, domestic worker
+
+HOW TO COLLECT SAFELY:
+- Take photos in bathroom with door locked
+- Screenshot threats, email to secure account he doesn't know
+- Keep paper copies at trusted person's home
+- Keep handwritten diary — write date, time, exact words said, any witnesses
+
+MLC — MOST POWERFUL EVIDENCE:
+- Government hospital ONLY (not private)
+- Tell doctor exactly what happened — do NOT say "I fell"
+- Request MLC specifically by name
+- Can be done up to 72 hours after injury
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 8 — CHILDREN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+- Both parents have equal rights unless court orders otherwise
+- In-laws have NO automatic custody right
+- Only Family Court can change custody
+- Leaving with children is NOT kidnapping — she is the mother
+- Courts prefer mother for children under 5
+- History of domestic violence hurts abuser's custody case
+- Take children when leaving — do not leave them behind
+- Inform school confidentially after leaving
+- Children witnessing violence = harm to child = grounds for protection order
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 9 — ALLY GUIDANCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+WHAT TO SAY:
+"I've noticed you seem tired lately. I'm not asking you to tell me anything. Just know I'm here — day or night."
+"I believe you. This is not okay and not your fault."
+"Whenever you're ready — even 2am — you can come to my house."
+"Would it help if I kept some documents or money at my house for you?"
+
+WHAT NOT TO SAY:
+NEVER: "Why don't you just leave?" — oversimplifies, increases danger
+NEVER: "Have you tried talking to him?" — implies she hasn't
+NEVER: "Think about your children" — she already is
+NEVER: "But he seems so nice" — typical abuser presentation
+NEVER: "Log kya kahenge" — abuser's tool, not hers
+NEVER: Tell others without her permission — information control = her safety
+
+PRACTICAL THINGS ALLIES DO:
+- Keep her go-bag and documents at your home
+- Give spare key to your home
+- Be emergency contact with code word
+- Accompany her to police station or OSC
+- If abuser asks for her location: say "I don't know"
+- Anyone can call 181 or 1091 to report concern about a woman
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 10 — COMMON FEARS AND MYTHS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+FEAR: "I can only file FIR at local police station"
+TRUTH: File at ANY police station in India. They must accept it by law.
+
+FEAR: "I will lose my children if I leave"
+TRUTH: Mother has equal legal right. Courts favour mother for young children. Leaving does not forfeit custody.
+
+FEAR: "I have no money and nowhere to go"
+TRUTH: One Stop Centres are completely free — shelter, food, legal, medical. Call 181. Walk in with nothing.
+
+FEAR: "Police won't help — it's a family matter"
+TRUTH: Police are legally obligated to register FIR. If refused, go to Magistrate or file NCW complaint.
+
+FEAR: "Only physical violence counts"
+TRUTH: PWDVA covers emotional, verbal, economic, sexual abuse equally. All valid in court.
+
+FEAR: "It's too late — married 20 years"
+TRUTH: No time limit on PWDVA or 498A. Many women file successfully after 20+ years.
+
+FEAR: "He will find me wherever I go"
+TRUTH: One Stop Centres do not disclose location to anyone including police without her consent.
+
+FEAR: "It's my fault"
+TRUTH: Abuse is always the abuser's choice. Courts do not ask "what did you do to provoke it."
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 11 — LANDMARK INDIAN CASES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Rupali Devi v State of UP (2019) — Supreme Court:
+Woman can file case WHERE SHE TOOK SHELTER after leaving — not restricted to where abuse happened.
+
+Hiral P. Harsora v Kusum Harsora (2016) — Supreme Court:
+Female relatives (mother-in-law, sister-in-law) CAN be respondents under PWDVA.
+
+V.D. Bhanot v Savita Bhanot (2012) — Supreme Court:
+PWDVA applies to relationships that existed BEFORE 2005. Past abuse can still be claimed.
+
+Indra Sarma v V.K.V. Sarma (2013) — Supreme Court:
+Live-in partners have rights similar to wife under PWDVA.
+
+Samar Ghosh v Jaya Ghosh (2007) — Supreme Court:
+Mental cruelty alone is sufficient for divorce. No physical violence required.
+
+Lalita Toppo v State of Jharkhand (2018) — Supreme Court:
+Live-in women can claim maintenance under PWDVA.
+
+Shayara Bano v Union of India (2017) — Supreme Court:
+Instant Triple Talaq unconstitutional. Muslim women protected from arbitrary divorce.
+
+S.R. Batra v Taruna Batra (2007): Wife has right to live in matrimonial home. In-laws cannot evict her.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 12 — POLICE / FIR / COMPLAINT GUIDANCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+HOW TO FILE FIR:
+1. Go to nearest police station (any station in India)
+2. Ask for SHO (Station House Officer)
+3. Say: "I want to file an FIR under Section 498A IPC for domestic violence"
+4. Police MUST register — Section 154 CrPC mandatory
+5. Get free copy of FIR immediately
+
+IF POLICE REFUSE:
+- Go to SP/DCP office and file written complaint
+- Go to Judicial Magistrate — file under Section 156(3) CrPC — Magistrate ORDERS police to file
+- File NCW online complaint: ncw.nic.in
+
+PWDVA COMPLAINT (often better first step):
+- Go to Protection Officer (every district — free)
+- Fill Domestic Incident Report (DIR)
+- Court can grant Protection Order same day
+- No police involvement required
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 13 — EMERGENCY SCRIPTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CALLING 112/100:
+"I need police immediately. I am being assaulted by my husband at [address]. Please come now."
+If cannot speak: dial 112, stay on line, tap — operators send help without voice.
+
+CALLING 181:
+"I am in an unsafe situation at home. I need shelter and help. Where is the nearest One Stop Centre?"
+
+AT GOVERNMENT HOSPITAL:
+"I have been beaten by my husband. I need treatment and I want an MLC — Medico-Legal Certificate. Please document all my injuries."
+Do NOT say "I fell."
+
+AT POLICE STATION:
+"I want to file an FIR under Section 498A IPC for cruelty and domestic violence."
+
+IF POLICE HESITATE:
+"It is your legal duty under Section 154 CrPC to register my FIR. If you do not, I will file a complaint with the SP and NCW."
+
+TO TRUSTED NEIGHBOR:
+"[Name], I need help right now. Can you call the police and tell them my address? My husband is hurting me."
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 14 — DIGITAL AND PHONE SAFETY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SIGNS PHONE IS MONITORED:
+- Battery drains unusually fast
+- Phone warm when not in use
+- He knows things only said in private messages
+- Data usage unexpectedly high
+
+SAFE BROWSER USE:
+- Always use Incognito/Private mode
+- Clear browser history after each session
+- Use DuckDuckGo instead of Google
+- Use Signal instead of WhatsApp
+
+LOCATION SAFETY:
+- Google Maps: Settings > Location Sharing — turn off sharing with husband
+- WhatsApp: Privacy > Live Location — end active shares
+- Disable location tagging in camera
+
+CREATE SAFE COMMUNICATION:
+- New email account on library computer or friend's phone
+- New SIM (Jio — Rs 149 with Aadhaar at any retailer)
+- Signal app for encrypted communications
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 15 — HELPLINES AND INSTITUTIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EMERGENCY: 112 (fastest), 100 (police), 108 (ambulance)
+WOMEN: 1091 (women in distress 24/7), 181 (One Stop Centre 24/7), 1800-111-100 (NCW)
+CHILDREN: 1098 (Childline 24/7)
+LEGAL AID: 1516 (NALSA free lawyer)
+MENTAL HEALTH: 9152987821 (iCall TISS free), 1860-2662-345 (Vandrevala 24/7)
+KARNATAKA: 1800-425-8555 (Vanitha Sahaya free), 080-25496487 (Vimochana Bangalore), 080-26607659 (Samara)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 16 — PRACTICAL INDIA-SPECIFIC ADVICE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+JOINT FAMILY: In-laws participating in abuse = named as PWDVA respondents (Hiral Harsora 2016).
+If in-laws prevent leaving = criminal confinement (IPC 340/341).
+If in-laws take her phone = theft (IPC 378).
+
+RURAL WOMEN: ASHA workers in every village can help contact authorities.
+Karnataka Mahila Samakhya: grassroots support in rural Karnataka.
+
+AADHAAR TIPS:
+- Aadhaar reprinted at any CSC for Rs 50 using biometrics — no other documents needed
+- Update Aadhaar address to new location through UIDAI app to protect privacy
+- Jan Dhan account opens at any CSC with just Aadhaar
 """
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -509,24 +464,116 @@ FACT: Under PWDVA, maintenance is based on lifestyle maintained during marriage,
 LANG_INSTRUCTIONS = {
     "en": "Respond ONLY in English. Use warm, conversational English — not formal or legal-sounding.",
     "kn": """IMPORTANT: Respond ENTIRELY in Kannada (ಕನ್ನಡ). Every word must be in Kannada.
-Use warm, simple Kannada that a common person in Karnataka understands — not academic Kannada.
-Legal terms can stay in English but explain them in Kannada immediately after.
-Write numbers in English (1, 2, 3) but everything else in Kannada script.
-Warm phrases to use: "ನಿಮ್ಮ ಸ್ಥಿತಿ ಅರ್ಥವಾಗುತ್ತದೆ" (I understand your situation), "ನೀವು ಒಂಟಿಯಲ್ಲ" (You are not alone), "ನಾವು ಇದನ್ನು ಒಟ್ಟಿಗೆ ನಿಭಾಯಿಸೋಣ" (We'll handle this together)""",
+Use warm, simple Kannada that a common person in Karnataka understands.
+Legal terms can stay in English but explain in Kannada immediately after.
+Numbers in English (1, 2, 3), everything else in Kannada script.""",
     "hi": """IMPORTANT: Respond ENTIRELY in Hindi (हिंदी). Every word must be in Hindi/Devanagari script.
-Use warm, simple Hindi — not formal or bureaucratic. Common spoken Hindi.
+Use warm, simple Hindi — not formal or bureaucratic.
 Legal terms can stay in English but explain in Hindi immediately after.
-Write numbers in English (1, 2, 3) but everything else in Hindi.
-Warm phrases: "आप अकेली नहीं हैं" (You are not alone), "हम मिलकर इसका हल निकालेंगे" (We'll find a solution together), "मैं समझती हूं यह कितना मुश्किल है" (I understand how difficult this is)""",
+Numbers in English (1, 2, 3), everything else in Hindi.""",
     "te": """IMPORTANT: Respond ENTIRELY in Telugu (తెలుగు). Every word must be in Telugu script.
 Use warm, simple Telugu that people in Andhra Pradesh/Telangana understand.
 Legal terms can stay in English but explain in Telugu immediately after.
-Write numbers in English (1, 2, 3) but everything else in Telugu.
-Warm phrases: "మీరు ఒంటరిగా లేరు" (You are not alone), "మనం కలిసి దీన్ని పరిష్కరిద్దాం" (We'll solve this together)"""
+Numbers in English (1, 2, 3), everything else in Telugu."""
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# MODELS
+# SYSTEM PROMPTS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+CHAT_SYSTEM = """You are SafeVoice — a warm, caring Indian woman friend who knows Indian law deeply. You are NOT a helpline bot. You do NOT just list phone numbers. You give real, specific, personalised advice.
+
+{lang_instruction}
+
+CRITICAL RULE: NEVER respond with only contact numbers or helplines. That is unhelpful.
+
+ALWAYS structure your response like this:
+1. 1-2 sentences of GENUINE emotional warmth first ("I know this is terrifying and you are so brave for reaching out")
+2. LEGAL SUMMARY: 2-3 plain sentences about what law protects her
+3. IMMEDIATE STEPS: 4-6 numbered SPECIFIC actions she can take (not vague — actual steps with real details)
+4. At the very end, mention ONE helpline naturally in a sentence
+
+EXAMPLE OF BAD RESPONSE — NEVER DO THIS:
+"Call 1091. Call 181. Contact police."
+
+EXAMPLE OF GOOD RESPONSE:
+"What you are going through sounds incredibly frightening, and I want you to know you are not alone in this.
+
+What your husband is doing is a criminal offense under IPC Section 498A AND covered by the Protection of Women from Domestic Violence Act 2005 — both physical violence AND mental cruelty are illegal.
+
+Here is what you can do:
+1. Tonight, if he comes home aggressive, lock yourself and children in a room and call 112 immediately
+2. Tomorrow morning, go to your nearest government hospital and ask specifically for an MLC — Medico-Legal Certificate. Tell the doctor exactly what happened. Do not say you fell.
+3. Take photos of any injuries in the bathroom with door locked — timestamp them by texting them to yourself
+4. Write today's incident in a diary: date, time, what he said, what he did, any witnesses nearby
+5. Contact the free Protection Officer in your district — they will help you file a PWDVA application that can get you a court Protection Order within days, without filing a criminal case
+
+You can also call 181 which connects to the One Stop Centre — free shelter, legal help and medical care all in one place."
+
+=== KNOWLEDGE BASE ===
+{knowledge_base}
+
+Remember: You are a knowledgeable friend. Be warm. Be specific. Give real advice. Max 350 words."""
+
+EXIT_PLAN_SYSTEM = """You are SafeVoice's Safe Exit Planner for India. You are a warm, practical friend who has helped women leave abusive situations before. You know Indian law, government resources, and the streets.
+
+{lang_instruction}
+
+CRITICAL RULES:
+1. Ask ONE focused question at a time — do not overwhelm her
+2. Give SPECIFIC numbered steps based on what she tells you — never generic advice
+3. Reference real Indian resources with exact contact numbers
+4. You MUST return valid JSON and nothing else — no text before or after the JSON
+
+PERSONALISE based on her answers:
+- IMMEDIATE DANGER: Skip preparation. Call 112. Go to OSC (call 181). Life first, documents later.
+- NO MONEY: One Stop Centre is 100% free — food, shelter, legal, medical. Call 181. Jan Dhan account at any bank with just Aadhaar.
+- NO DOCUMENTS: OSC does not need documents for emergency. Aadhaar reprinted at any CSC for Rs 50.
+- HAS CHILDREN: Take children when leaving. Inform school confidentially after. Apply interim custody at Family Court.
+- PHONE MONITORED: Use neighbour's phone. Delete browser history after this.
+
+=== KNOWLEDGE BASE ===
+{knowledge_base}
+
+=== HER SITUATION SO FAR ===
+{context}
+
+Return ONLY valid JSON, nothing before or after:
+{{
+  "reply": "2 sentences of warmth then numbered specific steps for HER situation. Use real Indian resources with exact numbers. No asterisks. Numbers like 1. 2. 3. Plain text only.",
+  "locationTip": "Tell her to search Google Maps for a specific safe place near her. Example: Search Google Maps for: One Stop Centre near me. Or null if not relevant.",
+  "followUpQuestion": "One specific caring follow-up question to personalise further. Or null if plan is complete.",
+  "options": ["Specific answer option 1", "Specific answer option 2", "Specific answer option 3", "Specific answer option 4"],
+  "nextQuestionId": "short_snake_case_id"
+}}"""
+
+ALLY_SYSTEM = """You are SafeVoice's Ally Mode for India. You help friends, family, and neighbours who suspect someone they love is being abused. You are warm, knowledgeable, and give specific practical advice.
+
+{lang_instruction}
+
+CRITICAL RULES:
+1. Give specific scripts and numbered steps — never just list helplines
+2. Give EXACT WORDS to say in Indian context
+3. Tell them what NOT to say — common mistakes that push survivors away
+4. You MUST return valid JSON and nothing else
+
+=== KNOWLEDGE BASE ===
+{knowledge_base}
+
+=== ALLY'S CONTEXT SO FAR ===
+{context}
+
+Return ONLY valid JSON, nothing before or after:
+{{
+  "reply": "2 sentences of warmth, then numbered specific steps with exact scripts. Plain text, no asterisks.",
+  "doThis": "The single most important specific thing they can do TODAY. Or null.",
+  "followUpQuestion": "One focused follow-up question to give more specific help. Or null.",
+  "options": ["Specific option 1", "Specific option 2", "Specific option 3", "Specific option 4"],
+  "nextQuestionId": "short_id"
+}}"""
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# REQUEST MODELS
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class ChatRequest(BaseModel):
@@ -554,36 +601,95 @@ class NearbyPlacesRequest(BaseModel):
     lng: float
     placeType: str
 
+class AllyRequest(BaseModel):
+    observation: str
+    language: str
+
+class ExitPlanRequest(BaseModel):
+    has_children: bool = False
+    has_income: bool = False
+    has_trusted_person: bool = False
+    has_documents: bool = False
+    has_transport: bool = False
+    is_immediate_danger: bool = False
+    has_shelter: bool = False
+    abuser_at_home: bool = False
+    situation_detail: str = ""
+    language: str = "en"
+
+class ComplaintRequest(BaseModel):
+    entries: List[Dict]
+    language: str
+
 # ═══════════════════════════════════════════════════════════════════════════════
-# CHAT — Legal Help with Warmth
+# HELPER FUNCTIONS
 # ═══════════════════════════════════════════════════════════════════════════════
 
-CHAT_SYSTEM = """You are SafeVoice — a warm, caring friend who knows Indian law deeply. NOT a robot. NOT a helpline script. A real friend who happens to know exactly what to do.
+def call_cerebras(system: str, messages: list, max_tokens: int = 900) -> str:
+    """Call Cerebras API with proper message formatting."""
+    clean_messages = []
+    for m in messages:
+        role = m.get("role", "")
+        content = m.get("content", "")
+        if role in ["user", "assistant"] and content:
+            clean_messages.append({"role": role, "content": content})
 
-{lang_instruction}
+    if not clean_messages:
+        clean_messages = [{"role": "user", "content": "Hello"}]
 
-=== YOUR PERSONALITY ===
-- Emotionally present FIRST, then practical
-- You acknowledge how hard this is before advice — genuinely, not formulaically
-- You speak directly like a friend, not a government pamphlet
-- You say things like "I know this is terrifying" not "I understand your concern"
-- You understand Indian context: joint families, financial dependence, log kya kahenge (what will people say), children, social pressure
-- You give advice that WORKS in Indian society — not Western ideals
+    # Cerebras requires alternating user/assistant messages
+    # Ensure first message is from user
+    if clean_messages[0]["role"] != "user":
+        clean_messages.insert(0, {"role": "user", "content": "Please help me."})
 
-=== KNOWLEDGE BASE ===
-{knowledge_base}
+    response = client.chat.completions.create(
+        model=MODEL,
+        messages=[{"role": "system", "content": system}] + clean_messages,
+        max_tokens=max_tokens,
+        temperature=0.7
+    )
+    return response.choices[0].message.content
 
-=== HOW TO RESPOND ===
-1. Start with 1-2 sentences of GENUINE emotional acknowledgment
-2. LEGAL SUMMARY: 2-3 plain-language sentences about what law covers this
-3. IMMEDIATE SAFETY STEPS: 3-5 numbered specific actions (not "seek help" — actual steps)
-4. NEXT RECOMMENDED ACTION: One clear thing to do next
-5. One relevant helpline woven in naturally (not dumped at end)
+def parse_json_response(raw: str) -> dict:
+    """Extract JSON from AI response."""
+    try:
+        # Try direct parse first
+        return json.loads(raw.strip())
+    except Exception:
+        pass
+    try:
+        # Extract JSON block
+        match = re.search(r'\{[\s\S]*\}', raw)
+        if match:
+            return json.loads(match.group())
+    except Exception:
+        pass
+    # Fallback
+    return {
+        "reply": raw,
+        "locationTip": None,
+        "followUpQuestion": None,
+        "options": None,
+        "nextQuestionId": None,
+        "doThis": None
+    }
 
-=== TONE ===
-Talk like you're sitting across from them over chai. Warm. Direct. Knowledgeable. Never preachy. Never dismissive of cultural realities. Never just list emergency numbers.
+# ═══════════════════════════════════════════════════════════════════════════════
+# ENDPOINTS
+# ═══════════════════════════════════════════════════════════════════════════════
 
-Max 320 words. Quality over length."""
+@app.get("/health")
+def health():
+    return {"status": "SafeVoice backend running", "model": MODEL}
+
+@app.get("/helplines")
+def helplines():
+    return {
+        "helplines": KB.get("helplines", []),
+        "shelters": KB.get("shelters", []),
+        "landmark_cases": KB.get("landmark_cases", []),
+        "myths": KB.get("myths", [])
+    }
 
 @app.post("/chat")
 def chat(req: ChatRequest):
@@ -592,57 +698,12 @@ def chat(req: ChatRequest):
         lang_instruction=lang_instruction,
         knowledge_base=KNOWLEDGE_BASE
     )
-    messages = []
-    for h in req.history:
-        messages.append({"role": h["role"], "content": h["content"]})
-    if not messages or messages[-1]["role"] != "user":
+    messages = list(req.history[-8:])
+    if not messages or messages[-1].get("role") != "user":
         messages.append({"role": "user", "content": req.message})
 
-    response = client.messages.create(
-        model="claude-opus-4-5",
-        max_tokens=900,
-        system=system,
-        messages=messages
-    )
-    return {"reply": response.content[0].text}
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# EXIT PLAN CHAT
-# ═══════════════════════════════════════════════════════════════════════════════
-
-EXIT_PLAN_SYSTEM = """You are SafeVoice's Safe Exit Planner. Imagine you are a close friend — someone who has helped women leave abusive situations in India before, knows the system, and genuinely cares.
-
-{lang_instruction}
-
-=== YOUR APPROACH ===
-You are making a REAL plan with them — step by step, conversation by conversation.
-- Acknowledge fear and difficulty genuinely before each set of advice
-- Give SPECIFIC numbered steps, not vague guidance
-- Reference actual Indian resources: One Stop Centres (call 181), DLSA (call 1516), Swadhar Greh, Jan Dhan accounts
-- Mention Google Maps search terms they can actually use: "One Stop Centre near me", "women police station near me"
-- Give realistic timelines: "You can open a Jan Dhan account in about 30 minutes at any bank"
-- Consider practical Indian barriers: no money, no documents, children, in-laws in same house, no income
-- Sound like you're sitting with them making this plan together
-
-=== KNOWLEDGE BASE ===
-{knowledge_base}
-
-=== GATHERED CONTEXT ===
-{context}
-
-=== RESPONSE FORMAT (STRICT — valid JSON only) ===
-{{
-  "reply": "1-2 sentences of genuine warmth acknowledging their situation, then numbered steps. Plain text, no asterisks. Use numbers (1. 2. 3.) for steps. Be specific about Indian resources.",
-  "locationTip": "Tell them to search Google Maps for specific safe places near them (e.g. 'Search on Google Maps: One Stop Centre near me — these are free government shelters'). Null if not yet relevant.",
-  "followUpQuestion": "One caring, specific follow-up question OR null if plan is complete",
-  "options": ["Specific Indian-context option 1", "Specific option 2", "Specific option 3", "Specific option 4"],
-  "nextQuestionId": "short_snake_id"
-}}
-
-=== TOPICS TO COVER PROGRESSIVELY ===
-Immediate danger tonight → children → trusted person → finances/cash → documents → where to physically go → phone safety → legal protection → longer term plan
-
-NEVER just list helplines. Give a real plan."""
+    reply = call_cerebras(system, messages, max_tokens=900)
+    return {"reply": reply}
 
 @app.post("/exit-plan-chat")
 def exit_plan_chat(req: ExitPlanChatRequest):
@@ -652,66 +713,12 @@ def exit_plan_chat(req: ExitPlanChatRequest):
         knowledge_base=KNOWLEDGE_BASE,
         context=json.dumps(req.context, ensure_ascii=False)
     )
-    messages = []
-    if req.history:
-        for h in req.history:
-            messages.append({"role": h["role"], "content": h["content"]})
+    messages = list(req.history[-10:])
     if not messages:
         messages = [{"role": "user", "content": req.lastAnswer}]
 
-    response = client.messages.create(
-        model="claude-opus-4-5",
-        max_tokens=950,
-        system=system,
-        messages=messages
-    )
-    raw = response.content[0].text
-    try:
-        match = re.search(r'\{[\s\S]*\}', raw)
-        if match:
-            data = json.loads(match.group())
-            return data
-    except Exception:
-        pass
-    return {"reply": raw, "locationTip": None, "followUpQuestion": None, "options": None, "nextQuestionId": None}
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# ALLY CHAT
-# ═══════════════════════════════════════════════════════════════════════════════
-
-ALLY_SYSTEM = """You are SafeVoice's Ally Mode — helping friends, family, neighbours who suspect someone they love is being abused. You are warm, practical, and deeply understand the Indian context of supporting survivors.
-
-{lang_instruction}
-
-=== UNDERSTAND THE ALLY'S POSITION ===
-They are scared of making things worse. They don't know if it's their place to interfere. They feel helpless. They face cultural pressure ("family matter"). They want to help but feel paralyzed.
-You respond like a knowledgeable friend helping them navigate this carefully and effectively.
-
-=== KNOWLEDGE BASE ===
-{knowledge_base}
-
-=== WHAT GREAT ALLY SUPPORT LOOKS LIKE ===
-1. EXACT scripts — word for word what to say in Indian context
-2. What NOT to say (common mistakes that push survivors away)
-3. How to build trust slowly — usually NOT a one-conversation fix
-4. When to involve authorities vs when not to (calling police immediately often makes things worse unless immediate danger)
-5. How to keep ally safe if abuser is also dangerous to them
-6. Practical offers: safe phone, safe address, cash, listening without judgment
-7. Understanding that survivor may not be ready to leave — that's okay and common
-
-=== GATHERED CONTEXT ===
-{context}
-
-=== RESPONSE FORMAT (STRICT — valid JSON only) ===
-{{
-  "reply": "Warmth first, then specific numbered steps. Include exact conversation scripts where relevant (what to actually say, in Indian context). Plain text, no asterisks.",
-  "doThis": "The single most important thing they can do TODAY, very specific. Or null.",
-  "followUpQuestion": "One focused follow-up to give more specific help. Or null if plan is complete.",
-  "options": ["Specific option 1", "Specific option 2", "Specific option 3", "Specific option 4"],
-  "nextQuestionId": "short_id"
-}}
-
-NEVER give generic "be supportive" advice. Give scripts, steps, specific Indian resources."""
+    raw = call_cerebras(system, messages, max_tokens=950)
+    return parse_json_response(raw)
 
 @app.post("/ally-chat")
 def ally_chat(req: AllyChatRequest):
@@ -721,37 +728,15 @@ def ally_chat(req: AllyChatRequest):
         knowledge_base=KNOWLEDGE_BASE,
         context=json.dumps(req.context, ensure_ascii=False)
     )
-    messages = []
-    if req.history:
-        for h in req.history:
-            messages.append({"role": h["role"], "content": h["content"]})
+    messages = list(req.history[-10:])
     if not messages:
         messages = [{"role": "user", "content": req.lastAnswer}]
 
-    response = client.messages.create(
-        model="claude-opus-4-5",
-        max_tokens=950,
-        system=system,
-        messages=messages
-    )
-    raw = response.content[0].text
-    try:
-        match = re.search(r'\{[\s\S]*\}', raw)
-        if match:
-            data = json.loads(match.group())
-            return data
-    except Exception:
-        pass
-    return {"reply": raw, "doThis": None, "followUpQuestion": None, "options": None, "nextQuestionId": None}
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# NEARBY PLACES
-# ═══════════════════════════════════════════════════════════════════════════════
-
-class NearbyPlacesRequest(BaseModel):
-    lat: float
-    lng: float
-    placeType: str
+    raw = call_cerebras(system, messages, max_tokens=950)
+    result = parse_json_response(raw)
+    if "doThis" not in result:
+        result["doThis"] = None
+    return result
 
 @app.post("/nearby-places")
 def nearby_places(req: NearbyPlacesRequest):
@@ -762,7 +747,7 @@ def nearby_places(req: NearbyPlacesRequest):
             {"label": "Nearest Police Station", "query": "police+station", "icon": "🚓"},
         ],
         "shelter": [
-            {"label": "One Stop Centre (Free Govt Shelter)", "query": "one+stop+centre+sakhi", "icon": "🏠"},
+            {"label": "One Stop Centre (Free Govt)", "query": "one+stop+centre+sakhi", "icon": "🏠"},
             {"label": "Short Stay Home for Women", "query": "short+stay+home+women+government", "icon": "🏡"},
             {"label": "Swadhar Greh", "query": "swadhar+greh", "icon": "🤝"},
             {"label": "Women NGO Shelter", "query": "women+shelter+domestic+violence", "icon": "💙"},
@@ -779,64 +764,49 @@ def nearby_places(req: NearbyPlacesRequest):
     places = queries.get(req.placeType, queries["shelter"])
     result = []
     for p in places:
-        encoded_query = p["query"] + f"+near+me"
         result.append({
             "label": p["label"],
             "icon": p["icon"],
-            "mapsUrl": f"{base}{encoded_query}/@{req.lat},{req.lng},14z",
+            "mapsUrl": f"{base}{p['query']}+near+me/@{req.lat},{req.lng},14z",
             "directionsUrl": f"https://www.google.com/maps/dir/?api=1&origin={req.lat},{req.lng}&destination={p['query']}"
         })
     return {"places": result}
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# LEGACY ENDPOINTS
-# ═══════════════════════════════════════════════════════════════════════════════
-
-class AllyRequest(BaseModel):
-    observation: str
-    language: str
+# ── Legacy endpoints (kept for frontend compatibility) ────────────────────────
 
 @app.post("/ally")
 def ally_legacy(req: AllyRequest):
     lang_instruction = LANG_INSTRUCTIONS.get(req.language, LANG_INSTRUCTIONS["en"])
-    response = client.messages.create(
-        model="claude-opus-4-5",
-        max_tokens=600,
-        system=f"{lang_instruction} You are a domestic abuse support assistant. Give specific numbered steps.",
-        messages=[{"role": "user", "content": f"I observed: {req.observation}. What should I do to help?"}]
-    )
-    return {"guidance": response.content[0].text}
-
-class ExitPlanRequest(BaseModel):
-    has_children: bool
-    has_income: bool
-    has_trusted_person: bool
-    language: str
+    system = f"""{lang_instruction}
+You are a domestic abuse support assistant for India. Give specific numbered steps for someone wanting to help a potential abuse victim. Include exact scripts of what to say."""
+    messages = [{"role": "user", "content": f"I observed: {req.observation}. What should I do to help this person?"}]
+    return {"guidance": call_cerebras(system, messages, max_tokens=600)}
 
 @app.post("/exit-plan")
 def exit_plan_legacy(req: ExitPlanRequest):
     lang_instruction = LANG_INSTRUCTIONS.get(req.language, LANG_INSTRUCTIONS["en"])
-    ctx = f"Has children: {req.has_children}, Has income: {req.has_income}, Has trusted person: {req.has_trusted_person}"
-    response = client.messages.create(
-        model="claude-opus-4-5",
-        max_tokens=700,
-        system=f"{lang_instruction} You are a domestic abuse safety planner. Give numbered exit plan.",
-        messages=[{"role": "user", "content": f"Create a safety exit plan. Context: {ctx}"}]
-    )
-    return {"plan": response.content[0].text}
-
-class ComplaintRequest(BaseModel):
-    entries: List[Dict]
-    language: str
+    situation = f"""Has children: {req.has_children}
+Has income: {req.has_income}
+Has trusted person: {req.has_trusted_person}
+Has documents: {req.has_documents}
+In immediate danger: {req.is_immediate_danger}
+Abuser at home: {req.abuser_at_home}
+Additional context: {req.situation_detail}"""
+    system = f"""{lang_instruction}
+You are a domestic abuse safety planner for India. Give a personalised numbered exit plan based on the specific situation provided. Reference real Indian resources like One Stop Centre (181), DLSA (1516), Jan Dhan accounts."""
+    messages = [{"role": "user", "content": f"Create a personalised safety exit plan for this situation:\n{situation}"}]
+    return {"plan": call_cerebras(system, messages, max_tokens=700)}
 
 @app.post("/format-complaint")
 def format_complaint(req: ComplaintRequest):
     lang_instruction = LANG_INSTRUCTIONS.get(req.language, LANG_INSTRUCTIONS["en"])
-    entries_text = "\n\n".join([f"[{e.get('date', '')}] {e.get('text', '')}" for e in req.entries])
-    response = client.messages.create(
-        model="claude-opus-4-5",
-        max_tokens=800,
-        system=f"{lang_instruction} Format diary entries into a structured legal complaint document.",
-        messages=[{"role": "user", "content": entries_text}]
-    )
-    return {"complaint": response.content[0].text}
+    entries_text = "\n\n".join([
+        f"[{e.get('date', 'Unknown date')}] {e.get('text', '')}"
+        for e in req.entries
+    ])
+    system = f"""{lang_instruction}
+Format these diary entries into a structured police complaint/FIR document.
+Start with: "To, The Station House Officer..."
+Include: complainant situation, chronological incidents, laws violated (IPC 498A, PWDVA), relief sought."""
+    messages = [{"role": "user", "content": f"Format these incident logs as an FIR complaint:\n\n{entries_text}"}]
+    return {"complaint": call_cerebras(system, messages, max_tokens=800)}
