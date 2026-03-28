@@ -323,20 +323,11 @@ at the exact moment when silence is most dangerous.
 
 ---
 
-## Team
-
 **Team Nova**
 
 - Adithi B Prabhu
 - Ananya J C
 - Anusha
-
----
-
-## Hackathon Submission
-
-Built for **Hackfinity**  
-Theme: **Innovating for Women, Empowering Through Technology**
 
 ---
 
